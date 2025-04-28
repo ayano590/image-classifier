@@ -45,7 +45,8 @@ function App() {
         Key: fileName,
         Body: selectedFile,
         ContentType: selectedFile.type,
-        ACL: 'public-read',
+        // ACL: 'public-read',
+        // bucket does not allow ACLs
       };
 
       const upload = await s3.upload(params).promise();
