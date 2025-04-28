@@ -49,8 +49,6 @@ function App() {
       alert("Upload successful: " + upload.Location);
       console.log('Upload successful:', upload);
 
-      await s3.upload(uploadParams).promise();
-
       // After upload, call the classify API
       const response = await fetch("https://fxne7b5sc6.execute-api.us-east-1.amazonaws.com/prod/classify", {
         method: "POST",
