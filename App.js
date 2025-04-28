@@ -1,0 +1,93 @@
+// App.js
+import { useAuth } from "react-oidc-context";
+import AWS from 'aws-sdk';
+import { useState } from "react";
+
+function App() {
+  const auth = useAuth();
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const signOutRedirect = () => {
+    const clientId = "20ubm7idpsrksou3mf06nvl77r";
+    const logoutUri = "https://www.google.com"; // <--- Update this
+    const cognitoDomain = "https://us-east-1dkoolzhgj.auth.us-east-1.amazoncognito.com";
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  };
+
+  const uploadToS3 = async () => {
+    if (!selectedFile) {
+      alert("Please select a file first!");
+      return;
+    }
+
+    // Configure AWS with temporary credentials
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:89255477-fdd2-45f8-a009-612d9c70a352',
+      Logins: {
+        'cognito-idp.us-east-1.amazonaws.com/us-east-1_dKOOlZhgj': auth.user.id_token, // Your id_token here
+      },
+    });
+
+    try {
+      // Wait for credentials to be retrieved
+      await AWS.config.credentials.getPromise();
+
+      const s3 = new AWS.S3({
+        // apiVersion: '2006-03-01',
+        // looks kinda old, let's comment it out for now
+        params: { Bucket: 'my-image-classifier-uploads' },
+      });
+
+      const fileName = `${Date.now()}-${selectedFile.name}`;
+
+      const params = {
+        Key: fileName,
+        Body: selectedFile,
+        ContentType: selectedFile.type,
+        ACL: 'public-read',
+      };
+
+      const upload = await s3.upload(params).promise();
+      alert("Upload successful: " + upload.Location);
+      console.log('Upload successful:', upload);
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload failed.");
+    }
+  };
+
+  if (auth.isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (auth.error) {
+    return <div>Encountering error... {auth.error.message}</div>;
+  }
+
+  if (auth.isAuthenticated) {
+    return (
+      <div>
+        <pre> Hello: {auth.user?.profile.email} </pre>
+        <pre> ID Token: {auth.user?.id_token} </pre>
+
+        {/* Upload form */}
+        <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} />
+        <button onClick={uploadToS3}>Upload Image</button>
+
+        <br />
+        <button onClick={() => auth.removeUser()}>Sign out</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button onClick={() => auth.signinRedirect()}>Sign in</button>
+      <button onClick={() => signOutRedirect()}>Sign out</button>
+    </div>
+  );
+}
+
+export default App;
