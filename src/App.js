@@ -34,8 +34,6 @@ function App() {
       await AWS.config.credentials.getPromise();
 
       const s3 = new AWS.S3({
-        // apiVersion: '2006-03-01',
-        // looks kinda old, let's comment it out for now
         params: { Bucket: 'my-image-classifier-uploads' },
       });
 
@@ -45,14 +43,29 @@ function App() {
         Key: fileName,
         Body: selectedFile,
         ContentType: selectedFile.type,
-        // ACL: 'public-read',
-        // bucket does not allow ACLs
       };
 
       const upload = await s3.upload(params).promise();
       alert("Upload successful: " + upload.Location);
       console.log('Upload successful:', upload);
 
+      await s3.upload(uploadParams).promise();
+
+      // After upload, call the classify API
+      const response = await fetch("https://fxne7b5sc6.execute-api.us-east-1.amazonaws.com/prod/classify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bucket: "my-image-classifier-uploads",
+          key: selectedFile,
+        }),
+      });
+      
+      const classificationResult = await response.json();
+      console.log("Image classified as:", classificationResult);
+      
     } catch (error) {
       console.error("Upload error:", error);
       alert("Upload failed.");
