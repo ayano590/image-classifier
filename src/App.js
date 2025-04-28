@@ -57,7 +57,7 @@ function App() {
         },
         body: JSON.stringify({
           bucket: "my-image-classifier-uploads",
-          key: selectedFile,
+          key: fileName,
         }),
       });
       
