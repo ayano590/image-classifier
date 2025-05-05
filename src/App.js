@@ -48,10 +48,7 @@ function App() {
 
       const response = await fetch("https://fxne7b5sc6.execute-api.us-east-1.amazonaws.com/prod/classify", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${auth.user?.access_token}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bucket: "my-image-classifier-uploads",
           key: fileName,
